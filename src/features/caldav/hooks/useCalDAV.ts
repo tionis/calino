@@ -1412,7 +1412,17 @@ export function useCalDAVInstance(): UseCalDAVReturn {
     if (!managed || browserSessionConnectDone) return
 
     const serverUrl = new URL(managed.url, window.location.origin).href
-    const existing = storage.getAllAccounts().find((account) => account.serverUrl === serverUrl)
+    const normalizedServerUrl = serverUrl.replace(/\/+$/, '')
+    const matchingAccounts = storage
+      .getAllAccounts()
+      .filter((account) => account.serverUrl.replace(/\/+$/, '') === normalizedServerUrl)
+    // Prefer a usable match if an older build already left more than one
+    // local record. Existing duplicates are deliberately left untouched; the
+    // managed connection only needs to stop creating another one on reload.
+    const existing =
+      matchingAccounts.find(
+        (account) => storage.getCalendarsByAccountId(account.id).length > 0
+      ) ?? matchingAccounts[0]
     browserSessionConnectDone = true
 
     // Repair accounts persisted by older managed builds with zero calendars.

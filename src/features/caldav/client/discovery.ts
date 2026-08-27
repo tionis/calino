@@ -398,7 +398,15 @@ export async function probeConnection(
   const hintUrl = originalUrl || serverUrl
 
   try {
-    let baseUrl = await discoverServerUrl(serverUrl, proxyUrl ?? undefined)
+    // A managed browser-session account is configured by the deployment and
+    // already names its exact same-origin DAV endpoint. Generic discovery is
+    // both unnecessary and surprising here: after a failed well-known probe
+    // it guesses caldav.<host>, causing a pointless DNS request on every fresh
+    // browser. User-entered/basic-auth accounts still get normal discovery.
+    let baseUrl =
+      authMode === 'browser-session'
+        ? serverUrl.replace(/\/$/, '')
+        : await discoverServerUrl(serverUrl, proxyUrl ?? undefined)
 
     const attempt = async (url: string): Promise<{ ok: boolean; status: number }> => {
       const init: RequestInit = {

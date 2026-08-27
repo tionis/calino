@@ -639,6 +639,29 @@ describe('discovery', () => {
       )
     }
 
+    it('uses the configured endpoint directly for a managed browser session', async () => {
+      stubFetch({
+        propfind: () => ({ ok: false, status: 207 }),
+      })
+
+      const result = await probeConnection(
+        'https://calendar.example.com/dav/',
+        '',
+        '',
+        undefined,
+        undefined,
+        'browser-session'
+      )
+
+      expect(result).toEqual({
+        ok: true,
+        status: 207,
+        resolvedUrl: 'https://calendar.example.com/dav',
+      })
+      expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(fetch).mock.calls[0][0]).toBe('https://calendar.example.com/dav')
+    })
+
     it('treats 207 Multi-Status as success and reports the resolved URL', async () => {
       stubFetch({
         wellKnownUrl: 'https://caldav.example.com/dav.php',
