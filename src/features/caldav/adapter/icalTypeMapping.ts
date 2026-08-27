@@ -606,13 +606,34 @@ interface IcalTimeToISOResult {
   tzid?: string
 }
 
+function rawDateProperty(prop: ICAL.Property | null): string | undefined {
+  const value = prop?.jCal?.[3]
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined
+}
+
+function previousRfcDate(date: string): string {
+  const [year, month, day] = date.split('-').map(Number)
+  const value = new Date(0)
+  value.setUTCHours(0, 0, 0, 0)
+  value.setUTCFullYear(year, month - 1, day)
+  value.setUTCDate(value.getUTCDate() - 1)
+  return `${String(value.getUTCFullYear()).padStart(4, '0')}-${String(value.getUTCMonth() + 1).padStart(2, '0')}-${String(value.getUTCDate()).padStart(2, '0')}`
+}
+
 function icalTimeToISO(icalTime: ICAL.Time, prop?: ICAL.Property): IcalTimeToISOResult {
   if (!icalTime || !icalTime.year) {
     throw new Error('Invalid ICAL.Time')
   }
 
   if (icalTime.isDate) {
-    return { iso: icalTime.toString() }
+    // ical.js does not zero-pad years below 1000 in Time#toString(), but RFC
+    // 5545 DATE values always carry a four-digit year. Unpadded strings such
+    // as `1-08-27` later become invalid date-fns inputs when a recurring
+    // birthday occurrence is laid out in the calendar.
+    const year = String(icalTime.year).padStart(4, '0')
+    const month = String(icalTime.month).padStart(2, '0')
+    const day = String(icalTime.day).padStart(2, '0')
+    return { iso: `${year}-${month}-${day}` }
   }
 
   // R2.2 — Read TZID from the source property FIRST, before checking
@@ -718,10 +739,19 @@ export function icalEventToCalendarEvent(
 ): CalendarEvent {
   const event = new ICAL.Event(vevent)
 
-  const dtstart = event.startDate
-  const dtend = event.endDate
+  // Prefer the source properties over ICAL.Event's derived accessors. For
+  // pre-1000 all-day values, ical.js can derive an invalid endDate even when
+  // the explicit DTEND property is a valid ICAL.Time.
+  const dtstartProp = vevent.getFirstProperty('dtstart')
+  const dtstartValue = dtstartProp?.getFirstValue()
+  const dtstart = dtstartValue instanceof ICAL.Time ? dtstartValue : event.startDate
+  const dtendProp = vevent.getFirstProperty('dtend')
+  const dtendValue = dtendProp?.getFirstValue()
+  const dtend = dtendValue instanceof ICAL.Time ? dtendValue : event.endDate
+  const rawDtstartDate = rawDateProperty(dtstartProp)
+  const rawDtendDate = rawDateProperty(dtendProp)
 
-  const isAllDay = dtstart ? dtstart.isDate : false
+  const isAllDay = Boolean(rawDtstartDate) || (dtstart ? dtstart.isDate : false)
 
   let start = ''
   let end = ''
@@ -730,24 +760,19 @@ export function icalEventToCalendarEvent(
   if (dtstart) {
     // R2.2 — Capture TZID from the DTSTART property (not just the
     // resolved zone) so we re-emit the original wall-clock + TZID.
-    const dtstartProp = vevent.getFirstProperty('dtstart')
-    const startResult = icalTimeToISO(dtstart, dtstartProp ?? undefined)
+    const startResult = rawDtstartDate
+      ? { iso: rawDtstartDate }
+      : icalTimeToISO(dtstart, dtstartProp ?? undefined)
     start = startResult.iso
     if (startResult.tzid) timezone = startResult.tzid
   }
 
-  if (dtend) {
+  if (dtend || rawDtendDate) {
     if (isAllDay) {
-      const endDateStr = dtend.toString()
-      const endDate = new Date(endDateStr + 'T00:00:00Z')
-      endDate.setUTCDate(endDate.getUTCDate() - 1)
-      const year = endDate.getUTCFullYear()
-      const month = String(endDate.getUTCMonth() + 1).padStart(2, '0')
-      const day = String(endDate.getUTCDate()).padStart(2, '0')
-      end = `${year}-${month}-${day}`
+      const endDate = rawDtendDate ?? dtend!.toString()
+      end = previousRfcDate(endDate)
     } else {
-      const dtendProp = vevent.getFirstProperty('dtend')
-      const endResult = icalTimeToISO(dtend, dtendProp ?? undefined)
+      const endResult = icalTimeToISO(dtend!, dtendProp ?? undefined)
       end = endResult.iso
       // DTEND's TZID should match DTSTART's; only set if DTSTART
       // didn't have one (defensive).

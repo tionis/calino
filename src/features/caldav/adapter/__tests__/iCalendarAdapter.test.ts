@@ -536,6 +536,27 @@ END:VCALENDAR`
       expect(parsedEvents[0].end).toBe('2024-03-16')
     })
 
+    it('zero-pads pre-1000 all-day years for date-fns compatibility', () => {
+      const parsedEvents = parseICALEvent(
+        [
+          'BEGIN:VCALENDAR',
+          'VERSION:2.0',
+          'BEGIN:VEVENT',
+          'UID:invented-early-year',
+          'DTSTART;VALUE=DATE:00010827',
+          'DTEND;VALUE=DATE:00010828',
+          'RRULE:FREQ=YEARLY',
+          'SUMMARY:Invented birthday',
+          'END:VEVENT',
+          'END:VCALENDAR',
+        ].join('\r\n'),
+        'cal-1'
+      )
+
+      expect(parsedEvents[0].start).toBe('0001-08-27')
+      expect(parsedEvents[0].end).toBe('0001-08-27')
+    })
+
     it('round-trip preserves SEQUENCE', () => {
       const originalEvent: CalendarEvent = {
         id: 'sequence-test',
