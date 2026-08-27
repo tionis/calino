@@ -11,6 +11,7 @@ import { test, expect } from '@playwright/test'
 import { clearState } from './fixtures/localstorage'
 
 const ICS_URL = 'https://example.com/test-calendar.ics'
+const PROXIED_ICS_URL = `/e2e-webcal-proxy/${encodeURIComponent('https://example.com')}/test-calendar.ics`
 
 // Use "today" so the event lands in the month view's default range without
 // needing date-specific navigation (Calino's URL routes don't carry a date).
@@ -37,12 +38,12 @@ const ICS_FIXTURE = [
 test.describe('Webcal calendar subscription', () => {
   test.beforeEach(async ({ page }) => {
     await clearState(page)
-    await page.route(ICS_URL, async (route) => {
+    await page.route(PROXIED_ICS_URL, async (route) => {
       await route.fulfill({ status: 200, contentType: 'text/calendar', body: ICS_FIXTURE })
     })
   })
 
-  test('subscribing adds a read-only calendar with the feed\'s events', async ({ page }) => {
+  test("subscribing adds a read-only calendar with the feed's events", async ({ page }) => {
     await page.goto('/')
 
     await page.getByRole('button', { name: 'Add calendar' }).click()
@@ -60,7 +61,9 @@ test.describe('Webcal calendar subscription', () => {
     // event is dated today, so it's in the visible range without navigation.
     await page.goto('/month')
 
-    const eventCard = page.locator('[data-component="event-card"]', { hasText: 'Webcal Test Event' })
+    const eventCard = page.locator('[data-component="event-card"]', {
+      hasText: 'Webcal Test Event',
+    })
     await expect(eventCard).toBeVisible()
 
     // Read-only: dragging is disabled via data-no-drag on the card.

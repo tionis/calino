@@ -18,6 +18,8 @@ export const config = {
           import.meta.env.VITE_CALINO_BROWSER_SESSION_DEFAULT_CALENDAR_NAME || 'Personal',
       }
     : null,
+  webcalProxyUrl: import.meta.env.VITE_CALINO_WEBCAL_PROXY_URL || null,
+  managedSubscriptionsUrl: import.meta.env.VITE_CALINO_MANAGED_SUBSCRIPTIONS_URL || null,
 }
 
 export const DEFAULT_CALENDAR_COLOR = '#4285F4'

@@ -9,6 +9,7 @@ import { DiagnosticsPanel } from './DiagnosticsPanel'
 import { AddCalendarModal } from '@/features/calendar/components/AddCalendarModal'
 import { SubscribeCalendarModal } from '@/features/calendar/components/SubscribeCalendarModal'
 import { useWebcalSubscriptions } from '@/features/webcal/hooks/useWebcalSubscriptions'
+import { ManagedSubscriptions } from './ManagedSubscriptions'
 import styles from './Settings.module.css'
 
 interface TestState {
@@ -301,7 +302,9 @@ export function CalDAVSettings(): JSX.Element {
                   {subscription.lastError
                     ? t('caldav.failedWithMessage', { message: subscription.lastError })
                     : subscription.lastFetchedAt
-                      ? t('caldav.syncedOn', { date: new Date(subscription.lastFetchedAt).toLocaleDateString() })
+                      ? t('caldav.syncedOn', {
+                          date: new Date(subscription.lastFetchedAt).toLocaleDateString(),
+                        })
                       : t('caldav.notYetSynced')}
                 </div>
               </div>
@@ -315,7 +318,9 @@ export function CalDAVSettings(): JSX.Element {
                   data-action="sync-subscription"
                   type="button"
                 >
-                  {syncingSubscriptionId === subscription.id ? t('caldav.syncing') : t('caldav.syncNow')}
+                  {syncingSubscriptionId === subscription.id
+                    ? t('caldav.syncing')
+                    : t('caldav.syncNow')}
                 </button>
                 {!subscription.isPreconfigured && (
                   <button
@@ -352,6 +357,8 @@ export function CalDAVSettings(): JSX.Element {
           {t('caldav.subscribe')}
         </button>
       </div>
+
+      <ManagedSubscriptions />
 
       <AddCalendarModal isOpen={isAddingAccount} onClose={() => setIsAddingAccount(false)} />
       {editingAccount && (

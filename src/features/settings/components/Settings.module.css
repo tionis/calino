@@ -1265,6 +1265,44 @@
   height: 16px;
 }
 
+.groupDescription {
+  margin: 0;
+  padding: 0 20px 14px;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.subscriptionForm {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.7fr) minmax(16rem, 1.3fr) auto;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line-2);
+}
+
+.subscriptionError {
+  margin: 0;
+  padding: 0 20px 14px;
+  color: var(--color-error-muted, var(--color-error));
+  font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  .subscriptionForm {
+    grid-template-columns: 1fr;
+  }
+
+  .accountRow {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .accountActions {
+    flex-wrap: wrap;
+  }
+}
+
 /* ── Data / Danger Zone ─────────────────────────────────────────────────── */
 .actionRow {
   display: flex;

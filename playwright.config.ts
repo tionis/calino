@@ -61,7 +61,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: `CALINO_E2E_MOCK=1 pnpm dev --port ${PORT} --strictPort`,
+      command: `CALINO_E2E_MOCK=1 VITE_CALINO_WEBCAL_PROXY_URL=/e2e-webcal-proxy VITE_CALINO_MANAGED_SUBSCRIPTIONS_URL=/e2e-managed-subscriptions pnpm dev --port ${PORT} --strictPort`,
       url: BASE_URL,
       reuseExistingServer: !IS_CI,
       timeout: 120_000,

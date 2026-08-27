@@ -7,6 +7,7 @@ import { useAnimatedClose } from '@/hooks/useAnimatedClose'
 import { useModalDismiss } from '@/hooks/useModalDismiss'
 import { EVENT_COLORS } from '@/store/settingsStore'
 import { classifySyncError, syncErrorReason } from '@/features/caldav/client/errorMessages'
+import { config } from '@/config'
 import styles from './AddCalendarModal.module.css'
 
 interface SubscribeCalendarModalProps {
@@ -32,7 +33,7 @@ export function SubscribeCalendarModal({
   const [color, setColor] = useState<string>(EVENT_COLORS[0])
   const [refreshIntervalMinutes, setRefreshIntervalMinutes] = useState(60)
   const [showProxyField, setShowProxyField] = useState(false)
-  const [proxyUrl, setProxyUrl] = useState('')
+  const [proxyUrl, setProxyUrl] = useState(config.webcalProxyUrl ?? '')
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -46,7 +47,7 @@ export function SubscribeCalendarModal({
     setColor(EVENT_COLORS[0])
     setRefreshIntervalMinutes(60)
     setShowProxyField(false)
-    setProxyUrl('')
+    setProxyUrl(config.webcalProxyUrl ?? '')
     setError('')
   }
 
@@ -117,7 +118,11 @@ export function SubscribeCalendarModal({
           <h3 className={styles.modalTitle} id="subscribe-modal-title">
             Subscribe to Calendar
           </h3>
-          <button className={styles.modalClose} onClick={requestClose} aria-label={t('surface.close')}>
+          <button
+            className={styles.modalClose}
+            onClick={requestClose}
+            aria-label={t('surface.close')}
+          >
             ✕
           </button>
         </div>
@@ -214,7 +219,7 @@ export function SubscribeCalendarModal({
                 <input
                   id="subscribeProxyUrl"
                   className={styles.input}
-                placeholder={t('surface.proxyUrlPlaceholder')}
+                  placeholder={t('surface.proxyUrlPlaceholder')}
                   value={proxyUrl}
                   onChange={(e) => setProxyUrl(e.target.value)}
                 />
