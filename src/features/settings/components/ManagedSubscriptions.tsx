@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { config } from '@/config'
 import {
   changeManagedSubscriptions,
+  loadManagedSubscriptionSource,
   loadManagedSubscriptions,
   type ManagedSubscription,
 } from '@/features/webcal/managedSubscriptions'
@@ -15,6 +16,8 @@ export function ManagedSubscriptions(): JSX.Element | null {
   const [url, setUrl] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editUrl, setEditUrl] = useState('')
 
   useEffect(() => {
     if (!endpoint) return
@@ -49,6 +52,27 @@ export function ManagedSubscriptions(): JSX.Element | null {
       return false
     } finally {
       setBusy(null)
+    }
+  }
+
+  const startEdit = async (id: string): Promise<void> => {
+    setBusy(`${id}/source`)
+    setError('')
+    try {
+      setEditUrl(await loadManagedSubscriptionSource(endpoint, id))
+      setEditingId(id)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not load the feed URL.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const saveEdit = async (event: FormEvent<HTMLFormElement>, id: string): Promise<void> => {
+    event.preventDefault()
+    if (await run(`${id}/source`, { url: editUrl.trim() })) {
+      setEditingId(null)
+      setEditUrl('')
     }
   }
 
@@ -106,6 +130,14 @@ export function ManagedSubscriptions(): JSX.Element | null {
             <button
               className={styles.rowBtn}
               disabled={busy !== null}
+              onClick={() => void startEdit(subscription.id)}
+              type="button"
+            >
+              Edit URL
+            </button>
+            <button
+              className={styles.rowBtn}
+              disabled={busy !== null}
               onClick={() => void run(`${subscription.id}/remove`)}
               type="button"
             >
@@ -123,6 +155,36 @@ export function ManagedSubscriptions(): JSX.Element | null {
               Delete calendar
             </button>
           </div>
+          {editingId === subscription.id && (
+            <form
+              className={styles.subscriptionForm}
+              data-component="managed-subscription-source"
+              onSubmit={(event) => void saveEdit(event, subscription.id)}
+            >
+              <input
+                aria-label={`Feed URL for ${subscription.name}`}
+                className={styles.formInput}
+                onChange={(event) => setEditUrl(event.target.value)}
+                required
+                type="url"
+                value={editUrl}
+              />
+              <button className={styles.actionBtn} disabled={busy !== null} type="submit">
+                {busy === `${subscription.id}/source` ? 'Saving…' : 'Save and sync'}
+              </button>
+              <button
+                className={styles.rowBtn}
+                disabled={busy !== null}
+                onClick={() => {
+                  setEditingId(null)
+                  setEditUrl('')
+                }}
+                type="button"
+              >
+                Cancel
+              </button>
+            </form>
+          )}
         </div>
       ))}
       <form className={styles.subscriptionForm} onSubmit={(event) => void add(event)}>

@@ -43,3 +43,15 @@ export async function changeManagedSubscriptions(
   })
   return (await parseResponse(response)).subscriptions
 }
+
+export async function loadManagedSubscriptionSource(baseUrl: string, id: string): Promise<string> {
+  const response = await fetch(`${baseUrl.replace(/\/$/, '')}/${id}/source`, {
+    credentials: 'same-origin',
+    cache: 'no-store',
+  })
+  const value = (await response.json()) as { url?: string; error?: string }
+  if (!response.ok || typeof value.url !== 'string') {
+    throw new Error(value.error || `Subscription service returned ${response.status}`)
+  }
+  return value.url
+}
